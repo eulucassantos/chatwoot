@@ -47,27 +47,16 @@ export const filterDuplicateSourceMessages = (messages = []) => {
  * @returns {Object} The last message of the conversation.
  */
 // coloca acima da getLastMessage
-const isRobertAttachmentEcho = message => {
-  const sourceId = String(message.source_id || '');
-  const attachments = message.attachments || [];
-
-  const senderId = Number(message.sender_id || message.sender?.id || 0);
-  const senderName = String(message.sender?.name || '').toLowerCase();
-  const senderEmail = String(message.sender?.email || '').toLowerCase();
+const isWhatsAppEchoMessage = message => {
+  const sourceId = String(message?.source_id || '');
 
   const isOutgoing =
-    message.message_type === 'outgoing' ||
-    Number(message.message_type) === 1;
+    message?.message_type === 'outgoing' ||
+    Number(message?.message_type) === 1;
 
-  const isRobert =
-    senderId === 1 ||
-    senderName.includes('robert') ||
-    senderEmail.includes('robert');
-
-  const hasAttachment = attachments.length > 0;
   const isWaEcho = sourceId.startsWith('WAID:');
 
-  return isOutgoing && isRobert && hasAttachment && isWaEcho;
+  return isOutgoing && isWaEcho;
 };
 
 // substitui sua getLastMessage antiga por essa
@@ -75,7 +64,7 @@ export const getLastMessage = m => {
   const messages = m.messages || [];
 
   const visibleMessages = messages.filter(
-    message => !isRobertAttachmentEcho(message)
+    message => !isWhatsAppEchoMessage(message)
   );
 
   const lastMessageIncludingActivity =
@@ -88,14 +77,12 @@ export const getLastMessage = m => {
   const lastNonActivityMessageInStore =
     nonActivityMessages[nonActivityMessages.length - 1];
 
-  const lastNonActivityMessageFromAPI = isRobertAttachmentEcho(
+  const lastNonActivityMessageFromAPI = isWhatsAppEchoMessage(
     m.last_non_activity_message || {}
   )
     ? null
     : m.last_non_activity_message;
 
-  // If API value and store value for last non activity message
-  // is empty, then return the last activity message
   if (!lastNonActivityMessageInStore && !lastNonActivityMessageFromAPI) {
     return lastMessageIncludingActivity;
   }

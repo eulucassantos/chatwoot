@@ -140,34 +140,23 @@ export default {
     getMessages() {
       const messages = this.currentChat.messages || [];
 
-      const isRobertAttachmentEcho = message => {
+      const isWhatsAppEchoMessage = message => {
         const sourceId = String(message.source_id || '');
-        const attachments = message.attachments || [];
-
-        const senderId = Number(message.sender_id || message.sender?.id || 0);
-        const senderName = String(message.sender?.name || '').toLowerCase();
-        const senderEmail = String(message.sender?.email || '').toLowerCase();
 
         const isOutgoing =
           message.message_type === 'outgoing' ||
           Number(message.message_type) === 1;
 
-        const isRobert =
-          senderId === 1 ||
-          senderName.includes('robert') ||
-          senderEmail.includes('robert');
-
-        const hasAttachment = attachments.length > 0;
         const isWaEcho = sourceId.startsWith('WAID:');
 
-        return isOutgoing && isRobert && hasAttachment && isWaEcho;
+        return isOutgoing && isWaEcho;
       };
 
       const visibleMessages = messages.filter(
-        message => !isRobertAttachmentEcho(message)
+        message => !isWhatsAppEchoMessage(message)
       );
 
-      if (this.isAWhatsAppCloudChannel) {
+      if (this.isAWhatsAppChannel || this.isAWhatsAppCloudChannel) {
         return filterDuplicateSourceMessages(visibleMessages);
       }
 
