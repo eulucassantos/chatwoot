@@ -130,12 +130,48 @@ export default {
 
       return '';
     },
+    // getMessages() {
+    //   const messages = this.currentChat.messages || [];
+    //   if (this.isAWhatsAppChannel) {
+    //     return filterDuplicateSourceMessages(messages);
+    //   }
+    //   return messages;
+    // }
     getMessages() {
       const messages = this.currentChat.messages || [];
-      if (this.isAWhatsAppChannel) {
-        return filterDuplicateSourceMessages(messages);
+
+      const isRobertAttachmentEcho = message => {
+        const sourceId = String(message.source_id || '');
+        const attachments = message.attachments || [];
+
+        const senderId = Number(message.sender_id || message.sender?.id || 0);
+        const senderName = String(message.sender?.name || '').toLowerCase();
+        const senderEmail = String(message.sender?.email || '').toLowerCase();
+
+        const isOutgoing =
+          message.message_type === 'outgoing' ||
+          Number(message.message_type) === 1;
+
+        const isRobert =
+          senderId === 1 ||
+          senderName.includes('robert') ||
+          senderEmail.includes('robert');
+
+        const hasAttachment = attachments.length > 0;
+        const isWaEcho = sourceId.startsWith('WAID:');
+
+        return isOutgoing && isRobert && hasAttachment && isWaEcho;
+      };
+
+      const visibleMessages = messages.filter(
+        message => !isRobertAttachmentEcho(message)
+      );
+
+      if (this.isAWhatsAppCloudChannel) {
+        return filterDuplicateSourceMessages(visibleMessages);
       }
-      return messages;
+
+      return visibleMessages;
     },
     readMessages() {
       return getReadMessages(
@@ -443,87 +479,47 @@ export default {
 
 <template>
   <div class="flex flex-col justify-between flex-grow h-full min-w-0 m-0">
-    <Banner
-      v-if="!currentChat.can_reply"
-      color-scheme="alert"
-      class="mx-2 mt-2 overflow-hidden rounded-lg"
-      :banner-message="replyWindowBannerMessage"
-      :href-link="replyWindowLink"
-      :href-link-text="replyWindowLinkText"
-    />
-    <Banner
-      v-else-if="hasDuplicateInstagramInbox"
-      color-scheme="alert"
-      class="mx-2 mt-2 overflow-hidden rounded-lg"
-      :banner-message="$t('CONVERSATION.OLD_INSTAGRAM_INBOX_REPLY_BANNER')"
-    />
-    <MessageList
-      ref="conversationPanelRef"
+    <Banner v-if="!currentChat.can_reply" color-scheme="alert" class="mx-2 mt-2 overflow-hidden rounded-lg"
+      :banner-message="replyWindowBannerMessage" :href-link="replyWindowLink" :href-link-text="replyWindowLinkText" />
+    <Banner v-else-if="hasDuplicateInstagramInbox" color-scheme="alert" class="mx-2 mt-2 overflow-hidden rounded-lg"
+      :banner-message="$t('CONVERSATION.OLD_INSTAGRAM_INBOX_REPLY_BANNER')" />
+    <MessageList ref="conversationPanelRef"
       class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 pb-4"
-      :current-user-id="currentUserId"
-      :first-unread-id="unReadMessages[0]?.id"
-      :is-an-email-channel="isAnEmailChannel"
-      :inbox-supports-reply-to="inboxSupportsReplyTo"
-      :messages="getMessages"
-      @retry="handleMessageRetry"
-    >
+      :current-user-id="currentUserId" :first-unread-id="unReadMessages[0]?.id" :is-an-email-channel="isAnEmailChannel"
+      :inbox-supports-reply-to="inboxSupportsReplyTo" :messages="getMessages" @retry="handleMessageRetry">
       <template #beforeAll>
         <transition name="slide-up">
           <!-- eslint-disable-next-line vue/require-toggle-inside-transition -->
           <li
-            class="min-h-[4rem] flex flex-shrink-0 flex-grow-0 items-center flex-auto justify-center max-w-full mt-0 mr-0 mb-1 ml-0 relative first:mt-auto last:mb-0"
-          >
+            class="min-h-[4rem] flex flex-shrink-0 flex-grow-0 items-center flex-auto justify-center max-w-full mt-0 mr-0 mb-1 ml-0 relative first:mt-auto last:mb-0">
             <Spinner v-if="shouldShowSpinner" class="text-n-brand" />
           </li>
         </transition>
       </template>
       <template #unreadBadge>
-        <li
-          v-show="unreadMessageCount != 0"
-          class="list-none flex justify-center items-center"
-        >
-          <span
-            class="shadow-lg rounded-full bg-n-brand text-white text-xs font-medium my-2.5 mx-auto px-2.5 py-1.5"
-          >
+        <li v-show="unreadMessageCount != 0" class="list-none flex justify-center items-center">
+          <span class="shadow-lg rounded-full bg-n-brand text-white text-xs font-medium my-2.5 mx-auto px-2.5 py-1.5">
             {{ unreadMessageLabel }}
           </span>
         </li>
       </template>
       <template #after>
-        <ConversationLabelSuggestion
-          v-if="shouldShowLabelSuggestions"
-          :suggested-labels="labelSuggestions"
-          :chat-labels="currentChat.labels"
-          :conversation-id="currentChat.id"
-        />
+        <ConversationLabelSuggestion v-if="shouldShowLabelSuggestions" :suggested-labels="labelSuggestions"
+          :chat-labels="currentChat.labels" :conversation-id="currentChat.id" />
       </template>
     </MessageList>
-    <div
-      class="flex relative flex-col"
-      :class="{
-        'modal-mask': isPopOutReplyBox,
-        'bg-n-surface-1': !isPopOutReplyBox,
-      }"
-    >
-      <div
-        v-if="isAnyoneTyping"
-        class="absolute flex items-center w-full h-0 -top-7"
-      >
+    <div class="flex relative flex-col" :class="{
+      'modal-mask': isPopOutReplyBox,
+      'bg-n-surface-1': !isPopOutReplyBox,
+    }">
+      <div v-if="isAnyoneTyping" class="absolute flex items-center w-full h-0 -top-7">
         <div
-          class="flex py-2 pr-4 pl-5 shadow-md rounded-full bg-white dark:bg-n-solid-3 text-n-slate-11 text-xs font-semibold my-2.5 mx-auto"
-        >
+          class="flex py-2 pr-4 pl-5 shadow-md rounded-full bg-white dark:bg-n-solid-3 text-n-slate-11 text-xs font-semibold my-2.5 mx-auto">
           {{ typingUserNames }}
-          <img
-            class="w-6 ltr:ml-2 rtl:mr-2"
-            src="assets/images/typing.gif"
-            alt="Someone is typing"
-          />
+          <img class="w-6 ltr:ml-2 rtl:mr-2" src="assets/images/typing.gif" alt="Someone is typing" />
         </div>
       </div>
-      <ReplyBox
-        :pop-out-reply-box="isPopOutReplyBox"
-        @update:pop-out-reply-box="isPopOutReplyBox = $event"
-      />
+      <ReplyBox :pop-out-reply-box="isPopOutReplyBox" @update:pop-out-reply-box="isPopOutReplyBox = $event" />
     </div>
   </div>
 </template>
