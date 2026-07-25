@@ -229,7 +229,15 @@ const newReportRoutes = () => [
 
 const reportRoutes = computed(() => newReportRoutes());
 
-const kanbanUrl = '/isoprime/kanban-sso';
+const abrirKanban = () => {
+  const userId = currentUser.value?.id;
+
+  if (!userId) {
+    return;
+  }
+
+  window.location.href = `/isoprime/kanban-sso?user_id=${userId}`;
+};
 
 const menuItems = computed(() => {
   const items = [
@@ -827,7 +835,7 @@ const menuItems = computed(() => {
       :class="isEffectivelyCollapsed ? 'px-1' : 'px-2'">
       <ul class="flex flex-col gap-1 m-0 list-none min-w-0" :class="{ 'items-center': isEffectivelyCollapsed }">
         <li class="w-full">
-          <a :href="kanbanUrl" target="_blank" rel="noopener noreferrer"
+          <a href="#" @click.prevent="abrirKanban" _target="_blank" rel="noopener noreferrer"
             class="flex items-center gap-2 w-full rounded-xl bg-[#2873D1] px-3 py-2 text-sm font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0D54BD] hover:shadow-md"
             :class="{
               'justify-center px-0 size-9': isEffectivelyCollapsed,
