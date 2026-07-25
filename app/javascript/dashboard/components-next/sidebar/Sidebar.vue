@@ -51,6 +51,14 @@ const isRTL = useMapGetter('accounts/isRTL');
 const { width: windowWidth } = useWindowSize();
 const isMobile = computed(() => windowWidth.value < 768);
 
+const currentUser = computed(() => store.getters.getCurrentUser || {});
+
+const isAdminUser = computed(() => {
+  const role = String(currentUser.value?.role || '').toLowerCase();
+
+  return ['admin', 'administrator', 'super_admin'].includes(role);
+});
+
 const accountId = useMapGetter('getCurrentAccountId');
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
@@ -221,8 +229,10 @@ const newReportRoutes = () => [
 
 const reportRoutes = computed(() => newReportRoutes());
 
+const kanbanUrl = 'https://projeto-isoprime-kanban.iuw3ed.easypanel.host';
+
 const menuItems = computed(() => {
-  return [
+  const items = [
     {
       name: 'Inbox',
       label: t('SIDEBAR.INBOX'),
@@ -609,22 +619,22 @@ const menuItems = computed(() => {
         },
         ...(hasAdvancedAssignment.value
           ? [
-              {
-                name: 'Settings Agent Assignment',
-                label: t('SIDEBAR.AGENT_ASSIGNMENT'),
-                icon: 'i-lucide-user-cog',
-                activeOn: [
-                  'assignment_policy_index',
-                  'agent_assignment_policy_index',
-                  'agent_assignment_policy_create',
-                  'agent_assignment_policy_edit',
-                  'agent_capacity_policy_index',
-                  'agent_capacity_policy_create',
-                  'agent_capacity_policy_edit',
-                ],
-                to: accountScopedRoute('assignment_policy_index'),
-              },
-            ]
+            {
+              name: 'Settings Agent Assignment',
+              label: t('SIDEBAR.AGENT_ASSIGNMENT'),
+              icon: 'i-lucide-user-cog',
+              activeOn: [
+                'assignment_policy_index',
+                'agent_assignment_policy_index',
+                'agent_assignment_policy_create',
+                'agent_assignment_policy_edit',
+                'agent_capacity_policy_index',
+                'agent_capacity_policy_create',
+                'agent_capacity_policy_edit',
+              ],
+              to: accountScopedRoute('assignment_policy_index'),
+            },
+          ]
           : []),
         {
           name: 'Settings Inboxes',
@@ -721,15 +731,44 @@ const menuItems = computed(() => {
       ],
     },
   ];
+
+  if (isAdminUser.value) {
+    return items;
+  }
+
+  const hiddenForAgents = [
+    'Inbox',
+    'Captain',
+    'Contacts',
+    'Companies',
+    'Reports',
+    'Campaigns',
+    'Portals',
+    'Settings',
+  ];
+
+  return items
+    .filter(item => !hiddenForAgents.includes(item.name))
+    .map(item => {
+      if (item.name !== 'Conversation') {
+        return item;
+      }
+
+      return {
+        ...item,
+        children: item.children.filter(child => {
+          return !['Channels'].includes(child.name);
+        }),
+      };
+    });
 });
 </script>
 
 <template>
-  <aside
-    v-on-click-outside="[
-      closeMobileSidebar,
-      { ignore: ['#mobile-sidebar-launcher'] },
-    ]"
+  <aside v-on-click-outside="[
+    closeMobileSidebar,
+    { ignore: ['#mobile-sidebar-launcher'] },
+  ]"
     class="bg-n-background flex flex-col text-sm pb-px fixed top-0 ltr:left-0 rtl:right-0 h-full z-40 w-[200px] md:w-auto md:relative md:flex-shrink-0 md:ltr:translate-x-0 md:rtl:translate-x-0 ltr:border-r rtl:border-l border-n-weak"
     :class="[
       {
@@ -738,139 +777,98 @@ const menuItems = computed(() => {
         'transition-transform duration-200 ease-out md:transition-[width]':
           !isResizing,
       },
-    ]"
-    :style="isMobile ? undefined : { width: `${sidebarWidth}px` }"
-  >
-    <section
-      class="grid"
-      :class="isEffectivelyCollapsed ? 'mt-3 mb-6 gap-4' : 'mt-1 mb-4 gap-2'"
-    >
-      <div
-        class="flex gap-2 items-center min-w-0"
-        :class="{
-          'justify-center px-1': isEffectivelyCollapsed,
-          'px-2': !isEffectivelyCollapsed,
-        }"
-      >
+    ]" :style="isMobile ? undefined : { width: `${sidebarWidth}px` }">
+    <section class="grid" :class="isEffectivelyCollapsed ? 'mt-3 mb-6 gap-4' : 'mt-1 mb-4 gap-2'">
+      <div class="flex gap-2 items-center min-w-0" :class="{
+        'justify-center px-1': isEffectivelyCollapsed,
+        'px-2': !isEffectivelyCollapsed,
+      }">
         <template v-if="isEffectivelyCollapsed">
-          <SidebarAccountSwitcher
-            is-collapsed
-            @show-create-account-modal="emit('showCreateAccountModal')"
-          />
+          <SidebarAccountSwitcher is-collapsed @show-create-account-modal="emit('showCreateAccountModal')" />
         </template>
         <template v-else>
           <div class="grid flex-shrink-0 place-content-center size-6">
             <Logo class="size-4" />
           </div>
           <div class="flex-shrink-0 w-px h-3 bg-n-strong" />
-          <SidebarAccountSwitcher
-            class="flex-grow -mx-1 min-w-0"
-            @show-create-account-modal="emit('showCreateAccountModal')"
-          />
+          <SidebarAccountSwitcher class="flex-grow -mx-1 min-w-0"
+            @show-create-account-modal="emit('showCreateAccountModal')" />
         </template>
       </div>
-      <div
-        class="flex gap-2"
-        :class="isEffectivelyCollapsed ? 'flex-col items-center' : 'px-2'"
-      >
-        <RouterLink
-          v-if="!isEffectivelyCollapsed"
-          :to="{ name: 'search' }"
-          class="flex gap-2 items-center px-2 py-1 w-full h-7 rounded-lg outline outline-1 outline-n-weak bg-n-button-color transition-all duration-100 ease-out"
-        >
+      <div class="flex gap-2" :class="isEffectivelyCollapsed ? 'flex-col items-center' : 'px-2'">
+        <RouterLink v-if="!isEffectivelyCollapsed" :to="{ name: 'search' }"
+          class="flex gap-2 items-center px-2 py-1 w-full h-7 rounded-lg outline outline-1 outline-n-weak bg-n-button-color transition-all duration-100 ease-out">
           <span class="flex-shrink-0 i-lucide-search size-4 text-n-slate-10" />
           <span class="flex-grow text-start text-n-slate-10">
             {{ t('COMBOBOX.SEARCH_PLACEHOLDER') }}
           </span>
-          <span
-            class="hidden tracking-wide pointer-events-none select-none text-n-slate-10"
-          >
+          <span class="hidden tracking-wide pointer-events-none select-none text-n-slate-10">
             {{ searchShortcut }}
           </span>
         </RouterLink>
-        <RouterLink
-          v-else
-          :to="{ name: 'search' }"
+        <RouterLink v-else :to="{ name: 'search' }"
           class="flex items-center justify-center size-8 rounded-lg outline outline-1 outline-n-weak bg-n-button-color transition-all duration-100 ease-out hover:bg-n-alpha-2 dark:hover:bg-n-slate-9/30"
-          :title="t('COMBOBOX.SEARCH_PLACEHOLDER')"
-        >
+          :title="t('COMBOBOX.SEARCH_PLACEHOLDER')">
           <span class="i-lucide-search size-4 text-n-slate-11" />
         </RouterLink>
         <ComposeConversation align-position="right" @close="onComposeClose">
           <template #trigger="{ toggle, isOpen }">
-            <Button
-              icon="i-lucide-pen-line"
-              color="slate"
-              size="sm"
-              class="dark:hover:!bg-n-slate-9/30"
-              :class="[
-                isEffectivelyCollapsed
-                  ? '!size-8 !outline-n-weak !text-n-slate-11'
-                  : '!h-7 !outline-n-weak !text-n-slate-11',
-                { '!bg-n-alpha-2 dark:!bg-n-slate-9/30': isOpen },
-              ]"
-              @click="onComposeOpen(toggle)"
-            />
+            <Button icon="i-lucide-pen-line" color="slate" size="sm" class="dark:hover:!bg-n-slate-9/30" :class="[
+              isEffectivelyCollapsed
+                ? '!size-8 !outline-n-weak !text-n-slate-11'
+                : '!h-7 !outline-n-weak !text-n-slate-11',
+              { '!bg-n-alpha-2 dark:!bg-n-slate-9/30': isOpen },
+            ]" @click="onComposeOpen(toggle)" />
           </template>
         </ComposeConversation>
       </div>
     </section>
-    <nav
-      class="grid overflow-y-scroll flex-grow gap-2 pb-5 no-scrollbar min-w-0"
-      :class="isEffectivelyCollapsed ? 'px-1' : 'px-2'"
-    >
-      <ul
-        class="flex flex-col gap-1 m-0 list-none min-w-0"
-        :class="{ 'items-center': isEffectivelyCollapsed }"
-      >
-        <SidebarGroup
-          v-for="item in menuItems"
-          :key="item.name"
-          v-bind="item"
-        />
+    <nav class="grid overflow-y-scroll flex-grow gap-2 pb-5 no-scrollbar min-w-0"
+      :class="isEffectivelyCollapsed ? 'px-1' : 'px-2'">
+      <ul class="flex flex-col gap-1 m-0 list-none min-w-0" :class="{ 'items-center': isEffectivelyCollapsed }">
+        <li class="w-full">
+          <a :href="kanbanUrl" target="_blank" rel="noopener noreferrer"
+            class="flex items-center gap-2 w-full rounded-xl bg-[#2873D1] px-3 py-2 text-sm font-bold text-white shadow-sm transition-all duration-150 hover:bg-[#0D54BD] hover:shadow-md"
+            :class="{
+              'justify-center px-0 size-9': isEffectivelyCollapsed,
+            }" title="Kanban CRM">
+            <span class="i-lucide-layout-dashboard size-4 shrink-0 text-white" />
+
+            <span v-if="!isEffectivelyCollapsed" class="truncate text-white">
+              Kanban CRM
+            </span>
+          </a>
+        </li>
+
+        <SidebarGroup v-for="item in menuItems" :key="item.name" v-bind="item" />
       </ul>
     </nav>
-    <section
-      class="flex relative flex-col flex-shrink-0 gap-1 justify-between items-center"
-    >
+    <section class="flex relative flex-col flex-shrink-0 gap-1 justify-between items-center">
       <div
-        class="pointer-events-none absolute inset-x-0 -top-[1.938rem] h-8 bg-gradient-to-t from-n-background to-transparent"
-      />
-      <SidebarChangelogCard
-        v-if="
-          isOnChatwootCloud &&
-          !isACustomBrandedInstance &&
-          !isEffectivelyCollapsed
-        "
-      />
-      <SidebarChangelogButton
-        v-if="
-          isOnChatwootCloud &&
-          !isACustomBrandedInstance &&
-          isEffectivelyCollapsed
-        "
-      />
+        class="pointer-events-none absolute inset-x-0 -top-[1.938rem] h-8 bg-gradient-to-t from-n-background to-transparent" />
+      <SidebarChangelogCard v-if="
+        isOnChatwootCloud &&
+        !isACustomBrandedInstance &&
+        !isEffectivelyCollapsed
+      " />
+      <SidebarChangelogButton v-if="
+        isOnChatwootCloud &&
+        !isACustomBrandedInstance &&
+        isEffectivelyCollapsed
+      " />
       <div
         class="px-1 py-1.5 flex-shrink-0 flex w-full z-50 gap-2 items-center border-t border-n-weak shadow-[0px_-2px_4px_0px_rgba(27,28,29,0.02)]"
-        :class="isEffectivelyCollapsed ? 'justify-center' : 'justify-between'"
-      >
-        <SidebarProfileMenu
-          :is-collapsed="isEffectivelyCollapsed"
-          @open-key-shortcut-modal="emit('openKeyShortcutModal')"
-        />
+        :class="isEffectivelyCollapsed ? 'justify-center' : 'justify-between'">
+        <SidebarProfileMenu :is-collapsed="isEffectivelyCollapsed"
+          @open-key-shortcut-modal="emit('openKeyShortcutModal')" />
       </div>
     </section>
     <!-- Resize Handle (desktop only) -->
-    <div
-      class="hidden md:block absolute top-0 h-full w-1 cursor-col-resize z-40 ltr:right-0 rtl:left-0 group"
-      @mousedown="onResizeStart"
-      @touchstart="onResizeStart"
-      @dblclick="onResizeHandleDoubleClick"
-    >
+    <div class="hidden md:block absolute top-0 h-full w-1 cursor-col-resize z-40 ltr:right-0 rtl:left-0 group"
+      @mousedown="onResizeStart" @touchstart="onResizeStart" @dblclick="onResizeHandleDoubleClick">
       <div
         class="absolute top-0 h-full w-px ltr:right-0 rtl:left-0 bg-transparent group-hover:bg-n-brand transition-colors"
-        :class="{ 'bg-n-brand': isResizing }"
-      />
+        :class="{ 'bg-n-brand': isResizing }" />
     </div>
   </aside>
 </template>
