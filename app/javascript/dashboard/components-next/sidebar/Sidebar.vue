@@ -229,7 +229,7 @@ const newReportRoutes = () => [
 
 const reportRoutes = computed(() => newReportRoutes());
 
-const kanbanUrl = 'https://projeto-isoprime-kanban.iuw3ed.easypanel.host';
+const kanbanUrl = '/isoprime/kanban-sso';
 
 const menuItems = computed(() => {
   const items = [

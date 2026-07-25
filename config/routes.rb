@@ -36,6 +36,7 @@ Rails.application.routes.draw do
   end
 
   get '/health', to: 'health#show'
+  get '/isoprime/kanban-sso', to: 'isoprime/kanban_sso#show'
   get '/api', to: 'api#index'
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
