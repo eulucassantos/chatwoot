@@ -3,8 +3,6 @@
 module Isoprime
   class KanbanSsoController < ApplicationController
 
-    skip_before_action :verify_authenticity_token
-
     def show
       user_id = params[:user_id]
 
@@ -44,12 +42,9 @@ module Isoprime
       )
     end
 
-
     private
 
-
     def gerar_token_sso(payload)
-
       header = {
         alg: 'HS256',
         typ: 'JWT'
@@ -70,7 +65,6 @@ module Isoprime
 
       "#{dados_assinados}.#{assinatura_base64}"
     end
-
 
     def base64_url_encode(data)
       Base64.urlsafe_encode64(data).delete('=')
