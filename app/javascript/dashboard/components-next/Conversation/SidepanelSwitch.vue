@@ -98,23 +98,23 @@ const pipelineStages = ref([]);
 
 const buscarEtapasFunil = async () => {
 
-    const response = await fetch('/api/kanban/colunas');
+  const response = await fetch('/isoprime/kanban/colunas');
 
-    const data = await response.json();
+  const data = await response.json();
 
-    if(data.success){
+  if (data.success) {
 
-        pipelineStages.value = data.columns
-          .filter(coluna => coluna.label)
-          .map(coluna => ({
-              id: coluna.id,
-              key: coluna.key,
-              name: coluna.title,
-              tag: coluna.label,
-              color: coluna.color
-          }));
+    pipelineStages.value = data.columns
+      .filter(coluna => coluna.label)
+      .map(coluna => ({
+        id: coluna.id,
+        key: coluna.key,
+        name: coluna.title,
+        tag: coluna.label,
+        color: coluna.color
+      }));
 
-    }
+  }
 
 };
 

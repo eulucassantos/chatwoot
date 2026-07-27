@@ -95,11 +95,11 @@ export default {
           :key="label.id"
           :title="label.title"
           :description="label.description"
-          show-close
+          :show-close="isAdmin"
           :color="label.color"
           variant="smooth"
           class="max-w-[calc(100%-0.5rem)]"
-          @remove="removeLabelFromConversation"
+          @remove="isAdmin && removeLabelFromConversation(label)"
         />
 
         <div
