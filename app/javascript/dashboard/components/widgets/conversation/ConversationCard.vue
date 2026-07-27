@@ -70,6 +70,7 @@ const currentChat = useMapGetter('getSelectedChat');
 const inboxesList = useMapGetter('inboxes/getInboxes');
 const activeInbox = useMapGetter('getSelectedInbox');
 const accountId = useMapGetter('getCurrentAccountId');
+const currentUser = useMapGetter('getCurrentUser');
 
 const chatMetadata = computed(() => props.chat.meta || {});
 
@@ -217,8 +218,32 @@ const onAssignLabel = label => {
   emit('assignLabel', [label.title], [props.chat.id]);
 };
 
+// const onRemoveLabel = label => {
+//   emit('removeLabel', [label.title], [props.chat.id]);
+// };
+
+const isAdmin = computed(() => {
+  return currentUser.value?.role === 'administrator';
+});
+
+
 const onRemoveLabel = label => {
-  emit('removeLabel', [label.title], [props.chat.id]);
+
+  const nomeTag = label.title || label.name || '';
+
+
+  const tagProtegida = 
+    nomeTag === 'atende-humano' ||
+    nomeTag.startsWith('funil-');
+
+
+  if (!isAdmin.value && tagProtegida) {
+    return;
+  }
+
+
+  emit('removeLabel', [nomeTag], [props.chat.id]);
+
 };
 
 const onAssignTeam = team => {
