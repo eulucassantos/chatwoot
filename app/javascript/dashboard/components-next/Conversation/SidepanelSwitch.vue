@@ -98,7 +98,9 @@ const pipelineStages = ref([]);
 
 const buscarEtapasFunil = async () => {
 
-  const response = await fetch('/isoprime/kanban/colunas');
+  const response = await fetch(
+  'https://projeto-isoprime-kanban.iuw3ed.easypanel.host/api/kanban/colunas'
+);
 
   const data = await response.json();
 
@@ -146,7 +148,7 @@ const alterarEtapa = async(stage) => {
 
 
     await fetch(
-        `/api/kanban/conversas/${conversaId}/etapa`,
+    `https://projeto-isoprime-kanban.iuw3ed.easypanel.host/api/kanban/conversas/${conversaId}/etapa`,
         {
             method:'PATCH',
             headers:{

@@ -43,24 +43,39 @@ module Isoprime
     end
 
     def colunas
-      kanban_url = ENV.fetch(
-        'ISOPRIME_KANBAN_URL',
-        'https://projeto-isoprime-kanban.iuw3ed.easypanel.host'
-      )
 
-      response = Faraday.get(
-        "#{kanban_url}/api/kanban/colunas"
-      )
+    kanban_url = ENV.fetch(
+      'ISOPRIME_KANBAN_URL',
+      'https://projeto-isoprime-kanban.iuw3ed.easypanel.host'
+    )
 
-      render json: JSON.parse(response.body)
-    rescue StandardError => e
-      Rails.logger.error("Erro ao buscar colunas Kanban: #{e.message}")
+    secret = ENV.fetch('ISOPRIME_KANBAN_SSO_SECRET')
 
-      render json: {
-        success: false,
-        message: 'Erro ao buscar etapas do funil'
-      }, status: :internal_server_error
+    response = Faraday.get(
+      "#{kanban_url}/api/kanban/colunas"
+    ) do |req|
+
+      req.headers['Accept'] = 'application/json'
+      req.headers['X-CHATWOOT-SSO'] = secret
+
     end
+
+
+    render json: JSON.parse(response.body)
+
+  rescue StandardError => e
+
+    Rails.logger.error(
+      "Erro ao buscar colunas Kanban: #{e.message}"
+    )
+
+    render json:{
+      success:false,
+      message:'Erro ao buscar etapas do funil'
+    },
+    status: :internal_server_error
+
+  end
 
     private
 
