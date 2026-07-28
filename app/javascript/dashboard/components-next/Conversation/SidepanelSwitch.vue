@@ -83,11 +83,9 @@ const handleCopilotSidebarToggle = () => {
 // CRM / FUNIL
 // ===============================
 
-
 const showPipelineModal = ref(false);
 
 const pipelineStages = ref([]);
-
 
 
 const buscarEtapasFunil = async () => {
@@ -98,12 +96,15 @@ const buscarEtapasFunil = async () => {
       `/isoprime/kanban/colunas?user_id=${currentUser.value.id}`
     );
 
+
     if (!response.ok) {
       console.error('Erro ao buscar etapas:', response.status);
       return;
     }
 
+
     const data = await response.json();
+
 
     if (data.success) {
 
@@ -118,6 +119,7 @@ const buscarEtapasFunil = async () => {
         }));
 
     }
+
 
   } catch (error) {
 
@@ -135,9 +137,11 @@ const abrirEtapaNegociacao = async () => {
     return;
   }
 
+
   await buscarEtapasFunil();
 
-  if(pipelineStages.value.length){
+
+  if (pipelineStages.value.length) {
     showPipelineModal.value = true;
   }
 
@@ -145,35 +149,53 @@ const abrirEtapaNegociacao = async () => {
 
 
 
-const alterarEtapa = async(stage) => {
+const alterarEtapa = async (stage) => {
 
-    if (!currentChat.value?.id || !stage?.key) {
-        return;
-    }
-
-    const conversaId = currentChat.value.id;
+  if (!currentChat.value?.id || !stage?.key) {
+    return;
+  }
 
 
-    await fetch(
-        `/isoprime/kanban/conversas/${conversaId}/etapa?user_id=${currentUser.value.id}`,
-        {
-            method:'PATCH',
-            headers:{
-                'Content-Type':'application/json',
-                Accept:'application/json'
-            },
-            body:JSON.stringify({
-                etapa_funil: stage.key
-            })
-        }
+  const conversaId = currentChat.value.id;
+
+
+  try {
+
+    const response = await fetch(
+      `/isoprime/kanban/conversas/${conversaId}/etapa?user_id=${currentUser.value.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({
+          etapa_funil: stage.key
+        })
+      }
     );
 
+
     if (!response.ok) {
-      console.error('Erro ao alterar etapa:', response.status);
+      console.error(
+        'Erro ao alterar etapa:',
+        response.status
+      );
       return;
     }
 
+
     showPipelineModal.value = false;
+
+
+  } catch (error) {
+
+    console.error(
+      'Erro comunicação alteração etapa:',
+      error
+    );
+
+  }
 
 };
 

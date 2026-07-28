@@ -39,6 +39,8 @@ Rails.application.routes.draw do
   get '/isoprime/kanban-sso', to: 'isoprime/kanban_sso#show'
   get '/isoprime/kanban/colunas',
     to: 'isoprime/kanban_sso#colunas'
+  patch '/isoprime/kanban/conversas/:conversation_id/etapa',
+    to: 'isoprime/kanban_sso#alterar_etapa'
   get '/api', to: 'api#index'
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do

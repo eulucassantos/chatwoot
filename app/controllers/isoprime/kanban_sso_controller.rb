@@ -103,6 +103,81 @@ module Isoprime
 
     end
 
+    def alterar_etapa
+
+      user_id = params[:user_id]
+
+      return head :unauthorized unless user_id.present?
+
+      user = User.find_by(id: user_id)
+
+      return head :unauthorized unless user
+
+
+      dados = JSON.parse(request.body.read)
+
+      etapa_funil = dados['etapa_funil']
+
+
+      return render json: {
+        success:false,
+        message:'Etapa não informada'
+      }, status:422 unless etapa_funil.present?
+
+
+      kanban_url = ENV.fetch(
+        'ISOPRIME_KANBAN_URL'
+      )
+
+
+      token = gerar_token_sso({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.account_users.find_by(account_id: 1)&.role,
+        account_id: 1,
+        iss:'chatwoot-isoprime',
+        iat:Time.current.to_i,
+        exp:60.seconds.from_now.to_i
+      })
+
+
+      response = Faraday.patch(
+        "#{kanban_url}/api/kanban/conversas/#{params[:conversation_id]}/etapa",
+        {
+          etapa_funil: etapa_funil
+        }.to_json,
+        {
+          'Authorization'=>"Bearer #{token}",
+          'Content-Type'=>'application/json',
+          'Accept'=>'application/json'
+        }
+      )
+
+
+      begin
+
+        render json: JSON.parse(response.body), status: response.status
+
+      rescue JSON::ParserError
+
+        render json:{
+          success:false,
+          message: response.body
+        }, status:500
+
+      end
+
+
+    rescue JSON::ParserError
+
+      render json:{
+        success:false,
+        message:'JSON inválido'
+      }, status:422
+
+    end
+
     private
 
     def gerar_token_sso(payload)
