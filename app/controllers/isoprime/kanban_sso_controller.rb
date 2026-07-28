@@ -44,38 +44,64 @@ module Isoprime
 
     def colunas
 
-    kanban_url = ENV.fetch(
-      'ISOPRIME_KANBAN_URL',
-      'https://projeto-isoprime-kanban.iuw3ed.easypanel.host'
-    )
+      user_id = params[:user_id]
 
-    secret = ENV.fetch('ISOPRIME_KANBAN_SSO_SECRET')
+      return head :unauthorized unless user_id.present?
 
-    response = Faraday.get(
-      "#{kanban_url}/api/kanban/colunas"
-    ) do |req|
+      user = User.find_by(id: user_id)
 
-      req.headers['Accept'] = 'application/json'
-      req.headers['X-CHATWOOT-SSO'] = secret
+      return head :unauthorized unless user
+
+
+      account_id = ENV.fetch('ISOPRIME_CHATWOOT_ACCOUNT_ID', '1').to_i
+
+      account_user = user.account_users.find_by(account_id: account_id)
+
+      return head :forbidden unless account_user
+
+
+      payload = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: account_user.role,
+        account_id: account_id,
+        iss: 'chatwoot-isoprime',
+        iat: Time.current.to_i,
+        exp: 60.seconds.from_now.to_i
+      }
+
+
+      token = gerar_token_sso(payload)
+
+
+      kanban_url = ENV.fetch(
+        'ISOPRIME_KANBAN_URL'
+      )
+
+
+      response = Faraday.get(
+        "#{kanban_url}/api/kanban/colunas",
+        nil,
+        {
+          'Authorization' => "Bearer #{token}",
+          'Accept' => 'application/json'
+        }
+      )
+
+
+      render json: JSON.parse(response.body)
+
+    rescue StandardError => e
+
+      Rails.logger.error("KANBAN COLUNAS: #{e.message}")
+
+      render json: {
+        success:false,
+        message:'Erro ao buscar etapas do funil'
+      }, status:500
 
     end
-
-
-    render json: JSON.parse(response.body)
-
-  rescue StandardError => e
-
-    Rails.logger.error(
-      "Erro ao buscar colunas Kanban: #{e.message}"
-    )
-
-    render json:{
-      success:false,
-      message:'Erro ao buscar etapas do funil'
-    },
-    status: :internal_server_error
-
-  end
 
     private
 

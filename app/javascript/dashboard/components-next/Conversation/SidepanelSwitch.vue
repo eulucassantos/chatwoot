@@ -8,7 +8,6 @@ import { useMapGetter } from 'dashboard/composables/store';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import ConversationPipelineModal from 'dashboard/components-next/ConversationWorkflow/ConversationPipelineModal.vue';
 import { useStoreGetters } from 'dashboard/composables/store';
-import { useConversationLabels } from 'dashboard/composables/useConversationLabels';
 
 
 const { updateUISettings } = useUISettings();
@@ -19,6 +18,7 @@ const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
 
+const currentUser = useMapGetter('getCurrentUser');
 
 const { uiSettings } = useUISettings();
 
@@ -45,12 +45,6 @@ const getters = useStoreGetters();
 const currentChat = computed(
   () => getters.getSelectedChat.value
 );
-
-const {
-  activeLabels,
-  addLabelToConversation,
-  removeLabelFromConversation,
-} = useConversationLabels();
 
 const toggleConversationSidebarToggle = () => {
 
@@ -98,23 +92,36 @@ const pipelineStages = ref([]);
 
 const buscarEtapasFunil = async () => {
 
-  const response = await fetch(
-  'https://projeto-isoprime-kanban.iuw3ed.easypanel.host/api/kanban/colunas'
-);
+  try {
 
-  const data = await response.json();
+    const response = await fetch(
+      `/isoprime/kanban/colunas?user_id=${currentUser.value.id}`
+    );
 
-  if (data.success) {
+    if (!response.ok) {
+      console.error('Erro ao buscar etapas:', response.status);
+      return;
+    }
 
-    pipelineStages.value = data.columns
-      .filter(coluna => coluna.label)
-      .map(coluna => ({
-        id: coluna.id,
-        key: coluna.key,
-        name: coluna.title,
-        tag: coluna.label,
-        color: coluna.color
-      }));
+    const data = await response.json();
+
+    if (data.success) {
+
+      pipelineStages.value = data.columns
+        .filter(coluna => coluna.label)
+        .map(coluna => ({
+          id: coluna.id,
+          key: coluna.key,
+          name: coluna.title,
+          tag: coluna.label,
+          color: coluna.color
+        }));
+
+    }
+
+  } catch (error) {
+
+    console.error('Erro comunicação Kanban:', error);
 
   }
 
@@ -148,7 +155,7 @@ const alterarEtapa = async(stage) => {
 
 
     await fetch(
-    `https://projeto-isoprime-kanban.iuw3ed.easypanel.host/api/kanban/conversas/${conversaId}/etapa`,
+        `/isoprime/kanban/conversas/${conversaId}/etapa?user_id=${currentUser.value.id}`,
         {
             method:'PATCH',
             headers:{
@@ -161,6 +168,10 @@ const alterarEtapa = async(stage) => {
         }
     );
 
+    if (!response.ok) {
+      console.error('Erro ao alterar etapa:', response.status);
+      return;
+    }
 
     showPipelineModal.value = false;
 
