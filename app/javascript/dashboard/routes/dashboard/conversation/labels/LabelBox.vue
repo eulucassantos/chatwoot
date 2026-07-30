@@ -51,7 +51,6 @@ export default {
     };
     useKeyboardEvents(keyboardEvents);
     return {
-      isAdmin,
       savedLabels,
       activeLabels,
       accountLabels,
@@ -111,7 +110,7 @@ export default {
             v-if="showSearchDropdownLabel"
             :account-labels="accountLabels"
             :selected-labels="savedLabels"
-            :allow-creation="isAdmin"
+            :allow-creation="true"
             @add="addLabelToConversation"
             @remove="removeLabelFromConversation"
           />
