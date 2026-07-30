@@ -218,32 +218,8 @@ const onAssignLabel = label => {
   emit('assignLabel', [label.title], [props.chat.id]);
 };
 
-// const onRemoveLabel = label => {
-//   emit('removeLabel', [label.title], [props.chat.id]);
-// };
-
-const isAdmin = computed(() => {
-  return currentUser.value?.role === 'administrator';
-});
-
-
 const onRemoveLabel = label => {
-
-  const nomeTag = label.title || label.name || '';
-
-
-  const tagProtegida = 
-    nomeTag === 'atende-humano' ||
-    nomeTag.startsWith('funil-');
-
-
-  if (!isAdmin.value && tagProtegida) {
-    return;
-  }
-
-
-  emit('removeLabel', [nomeTag], [props.chat.id]);
-
+  emit('removeLabel', [label.title], [props.chat.id]);
 };
 
 const onAssignTeam = team => {

@@ -1,7 +1,6 @@
 <script>
 import { ref } from 'vue';
 import { mapGetters } from 'vuex';
-import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useConversationLabels } from 'dashboard/composables/useConversationLabels';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import Spinner from 'shared/components/Spinner.vue';
@@ -15,7 +14,6 @@ export default {
     AddLabel,
   },
   setup() {
-    const { isAdmin } = useAdmin();
 
     const {
       savedLabels,
@@ -95,11 +93,11 @@ export default {
           :key="label.id"
           :title="label.title"
           :description="label.description"
-          :show-close="isAdmin"
+          :show-close="true"
           :color="label.color"
           variant="smooth"
           class="max-w-[calc(100%-0.5rem)]"
-          @remove="isAdmin && removeLabelFromConversation(label)"
+          @remove="removeLabelFromConversation(label)"
         />
 
         <div

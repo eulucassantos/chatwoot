@@ -241,9 +241,9 @@ useKeyboardEvents(keyboardEvents);
 
     <!-- CRM FUNIL -->
 
-    <Button v-tooltip.top="'Alterar etapa da negociação'" sm
+    <!-- <Button v-tooltip.top="'Alterar etapa da negociação'" sm
       class="!rounded-full !bg-[#2873D1] !text-white transition-all duration-[250ms] ease-out hover:!bg-[#0D54BD] active:!scale-95 active:!brightness-105"
-      icon="i-lucide-kanban" @click="abrirEtapaNegociacao" />
+      icon="i-lucide-kanban" @click="abrirEtapaNegociacao" /> -->
 
 
 
